@@ -1,28 +1,30 @@
-for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because has very few unique occurrences. Also Vulpes vulpes for some reeson at 32ky doesn't work.
+for (sp in seq_along(species_list))
 {
-  species_records <- subset(species_DB, Species==species_list[sp]) ### Subset the DATABASE per species
-  Species_time_bins <- sort(unique(species_records$Interval)) ### Sort the time intervals for the selected species
+  ### Subset the DATABASE per species
+  species_records <- subset(species_DB, Species==species_list[sp])
+  ### Sort the time intervals for the selected species
+  Species_time_bins <- sort(unique(species_records$Interval))
   spec_nam <- as.vector(unique(species_records$Species))
-  print(spec_nam)
   vec <- as.vector(NULL)
   for (bi in seq_along(Species_time_bins))
   { 
-    Occurrences_per_bin <- subset(species_records, Interval==Species_time_bins[bi])	 ## create a subset data.frame for each time bin ###
+    Occurrences_per_bin <- subset(species_records, Interval==Species_time_bins[bi])	 ## a subset data.frame for each time bin ###
     vec <- c(vec, nrow(Occurrences_per_bin)) ### Construct a vector with the number of Occurrences for each time interval
   }
-  list_len <- length(vec[vec >= 2*n_var]) ### thats the normal to make it comparable with the other analyses
+  list_len <- length(vec[vec >= 2*n_var])
   sdm_bins <- Species_time_bins[vec >= 2*n_var] ### Select the time intervals with enough occurrences to run the analysis
   used_occ <- vec[vec >= 2*n_var]
   if(list_len > 0)
   {
-  for(bi in seq_along(sdm_bins)) #### bins here have to be specified based on the unique bins of the species - or in the begining of the analyses for each species different time intervals 
+  #### have to be specified based on the unique bins of the species
+  for(bi in seq_along(sdm_bins)) 
     {
       clim_per_bin <- subset(clim.all, Interval==sdm_bins[bi])
       temp_hum_per_bin <- subset(Human_DB, Interval==sdm_bins[bi])
       #print(nrow(temp_hum_per_bin))
       temp_sp_per_bin <- subset(species_records, Interval==sdm_bins[bi]) 
       #print(nrow(temp_sp_per_bin))
-      temp_row_species <- sample.sp.globvar(dfsp=clim_per_bin,colspxy=1:2,colspkept=NULL,dfvar=temp_sp_per_bin,colvarxy=10:9,colvar=13,resolution=0.1) ###we are going to use the grid cell coordinates (specificaly: x=cell.Latitude, y=cell.Longitude) 
+      temp_row_species <- sample.sp.globvar(dfsp=clim_per_bin,colspxy=1:2,colspkept=NULL,dfvar=temp_sp_per_bin,colvarxy=10:9,colvar=13,resolution=0.1) ### use the grid cell coordinates (specificaly: x=cell.Latitude, y=cell.Longitude) 
       temp_row_hums <- sample.sp.globvar(dfsp=clim_per_bin,colspxy=1:2,colspkept=NULL,dfvar=temp_hum_per_bin,colvarxy=10:9,colvar=13,resolution=0.1)
       assign(paste("row.pa.sp.",sdm_bins[bi], sep=""), temp_row_species) ### rows of presence absence/background values for the species
       assign(paste("row.pa.hums.", sdm_bins[bi], sep=""), temp_row_hums)  ### rows of presence absence/background values for humans
@@ -59,9 +61,9 @@ for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because h
         species_data <- get(ls(pattern = "species.pa")[ro])
         par(mfrow=c(1,2), mar=c(2,2,2,2))
 		## humans Maxent ###
-        human_xyz <- human_data[,c(2,1,Xvar[1])];names(human_xyz)<-names(human_data[,c(1,2,Xvar[1])]) ## It will change based on the variables we keep
+        human_xyz <- human_data[,c(2,1,Xvar[1])];names(human_xyz)<-names(human_data[,c(1,2,Xvar[1])])
         human_rasts <- rasterFromXYZ(human_xyz)
-        for(r in Xvar[2:nvar]) ## also will depend based on the variables
+        for(r in Xvar[2:nvar]) ## will depend based on the number of variables
         {
           human_xyz <- human_data[,c(2,1,r)]
           human_nrast <- rasterFromXYZ(human_xyz)
@@ -71,8 +73,7 @@ for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because h
         jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='') #check if maxent.jar is located in the right folder
         human_me <- maxent(human_rasts, human_occur)
         human_r<-predict(human_me, human_rasts)
-        #plot(human_r, ylim=c(30,90), main=paste("Humans_suitability_map_", strsplit(ls(pattern = "human.pa.")[ro], split="human.pa.")[[1]][2], sep=""))
-        #points(human_occur)
+        
         ## species Maxent ##
         species_xyz <- species_data[,c(2,1,Xvar[1])];names(species_xyz)<-names(species_data[,c(1,2,Xvar[1])])
         species_rasts <- rasterFromXYZ(species_xyz)
@@ -83,11 +84,9 @@ for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because h
           species_rasts <- stack(species_rasts, species_nrast)
         }
         species_occur <- species_data[which(species_data$pa1==1),2:1]
-        jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='') #check if maxent.jar is located in the right folder
+        jar <- paste(system.file(package="dismo"), "/java/maxent.jar", sep='')
         species_me <- maxent(species_rasts, species_occur)
         species_r<-predict(species_me, species_rasts)
-        #plot(species_r, ylim=c(30,90), main=paste(spec_nam, "_suitability_map_", strsplit(ls(pattern = "species.pa.")[ro], split="species.pa.")[[1]][2], sep=""))
-        #points(species_occur)
         temp_clim <- subset(clim.all, Interval==sdm_bins[ro])
         temp_clim2 <- temp_clim[,c(2,1,3:10)]; names(temp_clim2)<-names(temp_clim[,c(1:10)])
         temp_species <- species_data[species_data$pa1>0,]
@@ -97,9 +96,9 @@ for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because h
         assign(paste("clim", sdm_bins[ro], "b", sep=""), temp_clim2)
         assign(paste("hum.occ.", sdm_bins[ro], "kb", sep=""), temp_humans2)
         assign(paste("spec.occ.", sdm_bins[ro], "kb", sep=""), temp_species2)
-        ## for HUMANS MODELING ###
+        ## HUMANS MODELING ###
         clim.allb <- temp_clim2
-        #clim.allb<-rbind(temp_clim2,temp_clim2) ### here we are using both ranges to calibrate the model (but humans and the species have the same range)
+        #clim.allb<-rbind(temp_clim2,temp_clim2) ### here we are using both ranges to calibrate the model
         scores.clim.all.MAXENT.humans <- data.frame(predict(human_me, clim.allb[,Xvar], progress="text"))
         temp_scores_clim_hum <- data.frame(predict(human_me, temp_clim2[,Xvar], progress="text"))
         assign(paste("hum.scores.clim.", sdm_bins[ro], "k.MAXENT", sep=""), temp_scores_clim_hum)
@@ -107,7 +106,7 @@ for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because h
         assign(paste("scores.humans.", sdm_bins[ro], "k.MAXENT", sep=""), temp_hum_occ)
         zz_hum <- grid.clim(scores.clim.all.MAXENT.humans, get(ls(pattern="hum.scores.clim.")[ro]), get(ls(pattern="scores.humans.")[ro]),R)
         assign(paste("humans_z", sdm_bins[ro], sep=""), zz_hum)
-        ### for MAMMALS MODELLING ###
+        ###  MAMMALS MODELLING ###
         scores.clim.all.MAXENT.species <- data.frame(predict(species_me, clim.allb[,Xvar], progress="text"))
         temp_scores_clim_spec <- data.frame(predict(species_me, temp_clim2[,Xvar], progress="text"))
         assign(paste("spec.scores.clim.", sdm_bins[ro], "k.MAXENT", sep=""), temp_scores_clim_spec)
@@ -128,7 +127,6 @@ for (sp in seq_along(species_list)) ### We have to exclude Discrotonyx because h
       assign(paste("b_", species_list[sp], "_", rev(sdm_bins)[z], "k", sep=""), b) ### speciffy soemwhere for which species is this
       b2 <-niche.similarity.test(get(rev(ls(pattern="species_z"))[z]), get(rev(ls(pattern="humans_z"))[z]), rep=500)
       assign(paste("b2_", species_list[sp], "_", rev(sdm_bins)[z], "k", sep=""), b2)
-      #pdf(file=paste0(species_list[sp], "_", rev(sdm_bins)[z],"k_niche - ", "Humans_", rev(sdm_bins)[z], "k_niche.pdf", sep=""))
       layout(matrix(c(1,1,2,2,1,1,2,2,3,3,4,5,3,3,6,7), 4, 4, byrow = TRUE))
       plot.niche(get(rev(ls(pattern="humans_z"))[z]), title= paste0("Maxent humans- ", rev(sdm_bins)[z],"k_niche", sep=""), name.axis1="Probability of occurence",name.axis2="PC2")
       box()
